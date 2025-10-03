@@ -63,7 +63,8 @@ app.use(cors({
       'https://vibe-bites-frontend.vercel.app',
       'https://www.vibebites.shop',
       'https://vibe-bites-backend.onrender.com',
-      'https://vibebites.shop'
+      'https://vibebites.shop',
+      'https://snacks-front01-g1bl.vercel.app'
     ];
     
     if (!origin || allowedOrigins.includes(origin)) {
