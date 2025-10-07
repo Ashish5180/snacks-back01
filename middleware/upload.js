@@ -140,5 +140,8 @@ module.exports = {
   uploadMultiple: handleUploadError(uploadMultiple),
   uploadProductImages: handleUploadError(uploadProductImages),
   getFileUrl,
-  handleUploadError
+  handleUploadError,
+  // new exports for dynamic subdirectories
+  makeSingleUploader,
+  createUploader
 };
