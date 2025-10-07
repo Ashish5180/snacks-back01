@@ -26,7 +26,7 @@ router.get('/:id', protect, admin, asyncHandler(async (req, res) => {
 // Update product by ID (Admin)
 router.put('/:id', protect, admin, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name 2-100 chars'),
-  body('description').trim().isLength({ min: 10, max: 1000 }).withMessage('Description 10-1000 chars'),
+  body('description').trim().isLength({ min: 0, max: 2000 }).withMessage('Description max 2000 chars'),
   body('category').notEmpty().withMessage('Category required'),
   body('image').notEmpty().withMessage('Main image is required'),
   body('sizes').isArray({ min: 1 }).withMessage('At least one size required'),
@@ -63,7 +63,7 @@ router.put('/:id', protect, admin, [
 // Create a full product (Admin) - both root and /create routes for compatibility
 router.post('/', protect, admin, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name 2-100 chars'),
-  body('description').trim().isLength({ min: 10, max: 1000 }).withMessage('Description 10-1000 chars'),
+  body('description').trim().isLength({ min: 0, max: 2000 }).withMessage('Description max 2000 chars'),
   body('category').notEmpty().withMessage('Category required'),
   body('image').notEmpty().withMessage('Main image is required'),
   body('sizes').isArray({ min: 1 }).withMessage('At least one size required'),
@@ -148,7 +148,7 @@ router.post('/create', protect, admin, uploadProductImages, asyncHandler(async (
     // Validation
     const errors = [];
     if (!productData.name || productData.name.trim().length < 2) errors.push({ msg: 'Name must be at least 2 characters' });
-    if (!productData.description || productData.description.trim().length < 10) errors.push({ msg: 'Description must be at least 10 characters' });
+    // Allow any length (including empty) for description
     if (!productData.category) errors.push({ msg: 'Category is required' });
     if (!productData.image) errors.push({ msg: 'Main image is required' });
     if (!productData.ingredients || !productData.ingredients.trim()) errors.push({ msg: 'Ingredients are required' });
