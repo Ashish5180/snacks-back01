@@ -10,7 +10,26 @@ const router = express.Router();
 
 // Public: list active categories
 router.get('/', asyncHandler(async (req, res) => {
-  const categories = await Category.find({ isActive: true }).sort({ name: 1 }).select('-__v');
+  const docs = await Category.find({ isActive: true }).sort({ name: 1 }).select('-__v').lean();
+
+  const forwardedProto = req.get('x-forwarded-proto') || req.get('X-Forwarded-Proto');
+  const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
+  const protocol = forwardedProto || req.protocol || 'http';
+  const host = forwardedHost || req.get('host');
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
+
+  const categories = docs.map(cat => {
+    let image = cat.image || '';
+    if (image) {
+      if (image.startsWith('/uploads/')) {
+        image = `${baseUrl}${image}`;
+      }
+      image = image.replace(/^https?:\/\/localhost:8080/, baseUrl);
+    }
+    return { ...cat, image };
+  });
+
   res.json({ success: true, data: { categories } });
 }));
 
@@ -43,7 +62,7 @@ router.post('/upload-image', protect, admin, uploadSingle, asyncHandler(async (r
     const { filename, size } = req.file;
     
     // Construct the public URL for the uploaded image
-    const imageUrl = getFileUrl(filename);
+    const imageUrl = getFileUrl(req, filename);
     
     logger.info(`Category image uploaded successfully: ${filename}, Size: ${size} bytes`);
 
@@ -104,7 +123,7 @@ router.post('/', protect, admin, uploadSingle, [
     // Handle image - either from file upload or URL
     if (req.file) {
       // File was uploaded
-      categoryData.image = getFileUrl(req.file.filename);
+      categoryData.image = getFileUrl(req, req.file.filename);
     } else if (req.body.image && req.body.image.trim()) {
       // URL was provided
       categoryData.image = req.body.image.trim();

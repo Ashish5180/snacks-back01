@@ -134,13 +134,13 @@ router.post('/create', protect, admin, uploadProductImages, asyncHandler(async (
     if (req.files) {
       // Handle main image
       if (req.files.image && req.files.image[0]) {
-        const mainImageUrl = getFileUrl(req.files.image[0].filename);
+        const mainImageUrl = getFileUrl(req, req.files.image[0].filename);
         productData.image = mainImageUrl;
       }
       
       // Handle additional images - they come as 'images' array
       if (req.files.images && req.files.images.length > 0) {
-        const additionalImageUrls = req.files.images.map(file => getFileUrl(file.filename));
+        const additionalImageUrls = req.files.images.map(file => getFileUrl(req, file.filename));
         productData.images = [...(productData.images || []), ...additionalImageUrls].filter(Boolean);
       }
     }
@@ -224,7 +224,7 @@ router.post('/upload', protect, admin, uploadSingle, asyncHandler(async (req, re
       });
     }
 
-    const imageUrl = `/uploads/products/${req.file.filename}`;
+    const imageUrl = getFileUrl(req, req.file.filename);
     
     res.json({ 
       success: true, 

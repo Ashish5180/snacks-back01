@@ -27,6 +27,7 @@ const contactRoutes = require('./routes/contact');
 const adminRoutes = require('./routes/admin');
 const adminProductCreateRoute = require('./routes/adminProducts');
 const wishlistRoutes = require('./routes/wishlist');
+const uploadsRoutes = require('./routes/uploads');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -64,7 +65,8 @@ app.use(cors({
       'https://www.vibebites.shop',
       'https://vibe-bites-backend.onrender.com',
       'https://vibebites.shop',
-      'https://snacks-front01-g1bl.vercel.app'
+      'https://snacks-front01-g1bl.vercel.app',
+      'https://snacks-front01-g1bl.vercel.app/'
     ];
     
     if (!origin || allowedOrigins.includes(origin)) {
@@ -179,6 +181,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/products', adminProductCreateRoute);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
 // Catch all handler for undefined routes
 app.all('*', (req, res) => {

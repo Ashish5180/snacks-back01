@@ -15,6 +15,11 @@ let appConfig = require('../config/config');
 // ==================== SHIPPING SETTINGS ENDPOINTS ====================
 // GET current shipping settings
 router.get('/shipping-fee', (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.json({
     success: true,
     shippingFee: appConfig.shippingFee,
@@ -44,6 +49,11 @@ router.put('/shipping-fee', async (req, res) => {
     appConfig.freeShippingThreshold = freeShippingThreshold;
   }
   
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.json({ 
     success: true, 
     shippingFee: appConfig.shippingFee,

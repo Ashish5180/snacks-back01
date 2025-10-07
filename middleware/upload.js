@@ -5,17 +5,25 @@ const fs = require('fs');
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
 const productsDir = path.join(uploadsDir, 'products');
+const bannersDir = path.join(uploadsDir, 'banners');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 if (!fs.existsSync(productsDir)) {
   fs.mkdirSync(productsDir, { recursive: true });
 }
+if (!fs.existsSync(bannersDir)) {
+  fs.mkdirSync(bannersDir, { recursive: true });
+}
 
-// Configure multer for local file storage
-const storage = multer.diskStorage({
+// Factory: configure multer for a given subdirectory under /uploads
+const makeStorageFor = (subdir) => multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, productsDir);
+    const dir = path.join(uploadsDir, subdir || 'products');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
   },
   filename: function (req, file, cb) {
     // Generate unique filename with timestamp
@@ -38,7 +46,7 @@ const fileFilter = (req, file, cb) => {
 
 // Configure upload limits and options
 const upload = multer({
-  storage: storage,
+  storage: makeStorageFor('products'),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max file size
     files: 5 // max 5 files
@@ -95,10 +103,35 @@ const handleUploadError = (uploadFn) => {
   };
 };
 
-// Generate file URL
-const getFileUrl = (filename) => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
-  return `${baseUrl}/uploads/products/${filename}`;
+// Generate file URL using the incoming request host/protocol (works behind proxies)
+const getFileUrl = (req, filename, subdir = 'products') => {
+  try {
+    const forwardedProto = req.get && (req.get('x-forwarded-proto') || req.get('X-Forwarded-Proto'));
+    const forwardedHost = req.get && (req.get('x-forwarded-host') || req.get('X-Forwarded-Host'));
+    const protocol = forwardedProto || (req.protocol || 'http');
+    const host = forwardedHost || (req.get && req.get('host'));
+    const baseUrlEnv = process.env.BASE_URL;
+    const baseUrl = (protocol && host) ? `${protocol}://${host}` : (baseUrlEnv || 'http://localhost:8080');
+    return `${baseUrl}/uploads/${subdir}/${filename}`;
+  } catch (_) {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+    return `${baseUrl}/uploads/${subdir}/${filename}`;
+  }
+};
+
+// Create custom uploaders
+const createUploader = (subdir) => multer({
+  storage: makeStorageFor(subdir),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 5
+  },
+  fileFilter
+});
+
+const makeSingleUploader = (subdir, fieldName = 'image') => {
+  const u = createUploader(subdir).single(fieldName);
+  return handleUploadError(u);
 };
 
 module.exports = {

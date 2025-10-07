@@ -538,3 +538,52 @@ For questions or support, please contact:
 
 //POINTS System
 //
+
+## 🖼️ Image URL Generation (Uploads)
+
+- Uploaded files are served from `/uploads` with CORS enabled.
+- The API now generates absolute image URLs using the incoming request's protocol and host (supports proxies like Vercel/Render/ELB).
+- If proxy headers are missing, it falls back to `BASE_URL` or `http://localhost:8080`.
+
+Environment tips:
+
+```env
+# Optional but recommended in non-proxied setups
+BASE_URL=https://snacks-back01.onrender.com
+```
+
+Notes:
+- Category list endpoint normalizes any saved `localhost` or relative `/uploads/...` paths to the current request host, ensuring images render correctly on the frontend.
+- Product upload endpoints also return absolute URLs.
+
+## 🚚 Shipping Settings
+
+- GET `GET /api/admin/shipping-fee` returns the current `shippingFee` and `freeShippingThreshold`.
+- PUT `PUT /api/admin/shipping-fee` updates both values at runtime (in-memory; not persisted across restarts).
+- Responses include `Cache-Control: no-store` to prevent stale values on the frontend. Frontend calls also add a cache-busting query.
+
+Notes:
+- Orders compute shipping on the server using `config.shippingFee` and `config.freeShippingThreshold` at the time of order creation.
+- Frontend uses the same values for cart preview; ensure you open Admin → Settings to adjust.
+
+## 🖼️ Banner Upload API
+
+- Endpoint: `POST /api/uploads/banner`
+- Auth: Admin only (Bearer token)
+- Form field: `image` (single file, max 5MB)
+- Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "imageUrl": "https://your-host/uploads/banners/image-...jpg",
+    "filename": "image-...jpg",
+    "size": 12345
+  }
+}
+```
+
+Notes:
+- Use the returned `imageUrl` in `components/HeroCarousel.js` slides.
+- Files are stored under `/uploads/banners` and served statically by the server.
