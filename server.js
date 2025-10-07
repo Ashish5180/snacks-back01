@@ -243,6 +243,22 @@ const startServer = async () => {
   app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
   });
+
+  // Keep-alive cron (hardcoded for production): ping hosted health endpoint every 5 minutes
+  const baseUrl = 'https://snacks-back01.onrender.com';
+  const pingHealth = async () => {
+    try {
+      const res = await fetch(`${baseUrl}/health`, { method: 'GET' });
+      if (!res.ok) throw new Error(`Health ping failed: ${res.status}`);
+      logger.info('Keep-alive: health ping ok');
+    } catch (err) {
+      logger.warn(`Keep-alive: health ping error: ${err.message}`);
+    }
+  };
+  // Fire immediately, then every 5 minutes
+  pingHealth();
+  setInterval(pingHealth, 5 * 60 * 1000);
+  logger.info('Keep-alive cron enabled (hardcoded prod): pinging /health every 5 minutes');
 };
 
 // Handle unhandled promise rejections
