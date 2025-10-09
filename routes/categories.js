@@ -4,7 +4,7 @@ const { protect, admin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const Category = require('../models/Category');
 const { logger } = require('../utils/logger');
-const { uploadSingle, getFileUrl } = require('../middleware/upload');
+const { makeSingleUploader, getFileUrl } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -146,7 +146,8 @@ router.post('/', protect, admin, uploadSingle, [
 }));
 
 // Update category
-router.put('/:id', protect, admin, [
+// Update category with file upload support
+router.put('/:id', protect, admin, makeSingleUploader('categories', 'image'), [
   param('id').isMongoId().withMessage('Invalid ID'),
   body('name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 chars'),
   body('description').optional().trim().isLength({ max: 300 }).withMessage('Description too long'),
@@ -175,7 +176,16 @@ router.put('/:id', protect, admin, [
     // Clean and update only provided fields
     if (req.body.name !== undefined) category.name = req.body.name.trim();
     if (req.body.description !== undefined) category.description = req.body.description.trim() || null;
-    if (req.body.image !== undefined) category.image = req.body.image.trim() || null;
+    
+    // Handle image update - either from file upload or URL
+    if (req.file) {
+      // File was uploaded
+      category.image = getFileUrl(req, req.file.filename, 'categories');
+    } else if (req.body.image !== undefined) {
+      // URL was provided
+      category.image = req.body.image.trim() || null;
+    }
+    
     if (req.body.isActive !== undefined) category.isActive = req.body.isActive;
     
     await category.save();

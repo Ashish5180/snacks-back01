@@ -6,6 +6,7 @@ const fs = require('fs');
 const uploadsDir = path.join(__dirname, '../uploads');
 const productsDir = path.join(uploadsDir, 'products');
 const bannersDir = path.join(uploadsDir, 'banners');
+const categoriesDir = path.join(uploadsDir, 'categories');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -14,6 +15,9 @@ if (!fs.existsSync(productsDir)) {
 }
 if (!fs.existsSync(bannersDir)) {
   fs.mkdirSync(bannersDir, { recursive: true });
+}
+if (!fs.existsSync(categoriesDir)) {
+  fs.mkdirSync(categoriesDir, { recursive: true });
 }
 
 // Factory: configure multer for a given subdirectory under /uploads
