@@ -10,8 +10,8 @@ const { logger } = require('../utils/logger');
 let razorpay = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
   razorpay = new Razorpay({
-    key_id: "rzp_test_RGMHZ4hW2QBTEj",
-    key_secret: "K8SKZez1rXLt0XYBM23dzsey",
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
 }
 
