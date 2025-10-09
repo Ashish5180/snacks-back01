@@ -49,7 +49,7 @@ router.get('/all', protect, admin, asyncHandler(async (req, res) => {
 }));
 
 // Upload category image endpoint
-router.post('/upload-image', protect, admin, uploadSingle, asyncHandler(async (req, res) => {
+router.post('/upload-image', protect, admin, makeSingleUploader('categories', 'image'), asyncHandler(async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -62,7 +62,7 @@ router.post('/upload-image', protect, admin, uploadSingle, asyncHandler(async (r
     const { filename, size } = req.file;
     
     // Construct the public URL for the uploaded image
-    const imageUrl = getFileUrl(req, filename);
+    const imageUrl = getFileUrl(req, filename, 'categories');
     
     logger.info(`Category image uploaded successfully: ${filename}, Size: ${size} bytes`);
 
@@ -95,7 +95,7 @@ router.post('/upload-image', protect, admin, uploadSingle, asyncHandler(async (r
 }));
 
 // Create category (admin) - supports both file upload and URL
-router.post('/', protect, admin, uploadSingle, [
+router.post('/', protect, admin, makeSingleUploader('categories', 'image'), [
   body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 chars'),
   body('description').optional().trim().isLength({ max: 300 }).withMessage('Description too long'),
   body('image').optional().trim().custom((value) => {
@@ -123,7 +123,7 @@ router.post('/', protect, admin, uploadSingle, [
     // Handle image - either from file upload or URL
     if (req.file) {
       // File was uploaded
-      categoryData.image = getFileUrl(req, req.file.filename);
+      categoryData.image = getFileUrl(req, req.file.filename, 'categories');
     } else if (req.body.image && req.body.image.trim()) {
       // URL was provided
       categoryData.image = req.body.image.trim();

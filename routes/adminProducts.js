@@ -4,7 +4,7 @@ const { protect, admin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const Product = require('../models/Product');
 const { logger } = require('../utils/logger');
-const { uploadProductImages, getFileUrl, uploadSingle } = require('../middleware/upload');
+const { uploadProductImages, getFileUrl, makeSingleUploader } = require('../middleware/upload');
 const router = express.Router();
 const Category = require('../models/Category');
 const multer = require('multer');
@@ -134,13 +134,13 @@ router.post('/create', protect, admin, uploadProductImages, asyncHandler(async (
     if (req.files) {
       // Handle main image
       if (req.files.image && req.files.image[0]) {
-        const mainImageUrl = getFileUrl(req, req.files.image[0].filename);
+        const mainImageUrl = getFileUrl(req, req.files.image[0].filename, 'products');
         productData.image = mainImageUrl;
       }
       
       // Handle additional images - they come as 'images' array
       if (req.files.images && req.files.images.length > 0) {
-        const additionalImageUrls = req.files.images.map(file => getFileUrl(req, file.filename));
+        const additionalImageUrls = req.files.images.map(file => getFileUrl(req, file.filename, 'products'));
         productData.images = [...(productData.images || []), ...additionalImageUrls].filter(Boolean);
       }
     }
@@ -215,7 +215,7 @@ router.post('/create', protect, admin, uploadProductImages, asyncHandler(async (
 }));
 
 // Upload product image endpoint
-router.post('/upload', protect, admin, uploadSingle, asyncHandler(async (req, res) => {
+router.post('/upload', protect, admin, makeSingleUploader('products', 'image'), asyncHandler(async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -224,7 +224,7 @@ router.post('/upload', protect, admin, uploadSingle, asyncHandler(async (req, re
       });
     }
 
-    const imageUrl = getFileUrl(req, req.file.filename);
+    const imageUrl = getFileUrl(req, req.file.filename, 'products');
     
     res.json({ 
       success: true, 
