@@ -94,7 +94,8 @@ router.post('/validate', [
         type: coupon.type,
         categories: coupon.categories,
         minOrderAmount: coupon.minOrderAmount,
-        maxDiscount: coupon.maxDiscount
+        maxDiscount: coupon.maxDiscount,
+        maxDiscountAmount: coupon.maxDiscount // For backward compatibility
       },
       discountAmount
     }
