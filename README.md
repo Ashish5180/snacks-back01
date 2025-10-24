@@ -455,7 +455,14 @@ The API includes beautiful HTML email templates for:
 
 ## 🐛 Recent Fixes
 
-### Coupon Validation System (Latest)
+### Banner Upload System (Latest)
+- **Fixed 400 Bad Request Error**: Resolved Content-Type header issue for banner uploads
+- **File Upload Headers**: Added proper `getFileUploadHeaders()` function for FormData requests
+- **Content-Type Handling**: Removed Content-Type header for file uploads to let browser set proper boundary
+- **Admin Panel Integration**: Fixed banner upload functionality in admin dashboard
+- **FormData Support**: Ensured proper multipart/form-data handling for image uploads
+
+### Coupon Validation System
 - **Fixed 400 Bad Request Error**: Resolved authentication requirement issue for coupon validation
 - **Guest User Support**: Made authentication optional for coupon validation to support guest users
 - **Enhanced Request Format**: Added support for `items` parameter in coupon validation requests
