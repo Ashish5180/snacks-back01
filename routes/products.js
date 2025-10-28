@@ -94,6 +94,36 @@ router.get('/', [
       .limit(parseInt(limit))
       .select('-__v');
 
+    // Build base URL for normalizing image paths
+    const forwardedProto = req.get('x-forwarded-proto') || req.get('X-Forwarded-Proto');
+    const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
+    const protocol = forwardedProto || req.protocol || 'http';
+    const host = forwardedHost || req.get('host');
+    const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+    const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
+
+    // Normalize product image URLs so they work on any device/host
+    const normalizedProducts = products.map(p => {
+      const product = p.toObject ? p.toObject() : p;
+      let mainImage = product.image || '';
+      if (mainImage) {
+        if (mainImage.startsWith('/uploads/')) {
+          mainImage = `${baseUrl}${mainImage}`;
+        }
+        mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+      }
+      let images = Array.isArray(product.images) ? product.images.slice() : [];
+      images = images.map(img => {
+        if (!img) return img;
+        let out = img;
+        if (out.startsWith('/uploads/')) {
+          out = `${baseUrl}${out}`;
+        }
+        return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+      });
+      return { ...product, image: mainImage, images };
+    });
+
     // Get total count for pagination
     const total = await Product.countDocuments(filter);
 
@@ -105,7 +135,7 @@ router.get('/', [
     res.json({
       success: true,
       data: {
-        products,
+        products: normalizedProducts,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -134,9 +164,38 @@ router.get('/featured', asyncHandler(async (req, res) => {
     .limit(6)
     .select('-__v');
 
+  // Build base URL for normalizing image paths
+  const forwardedProto = req.get('x-forwarded-proto') || req.get('X-Forwarded-Proto');
+  const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
+  const protocol = forwardedProto || req.protocol || 'http';
+  const host = forwardedHost || req.get('host');
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
+
+  const normalizedProducts = products.map(p => {
+    const product = p.toObject ? p.toObject() : p;
+    let mainImage = product.image || '';
+    if (mainImage) {
+      if (mainImage.startsWith('/uploads/')) {
+        mainImage = `${baseUrl}${mainImage}`;
+      }
+      mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+    }
+    let images = Array.isArray(product.images) ? product.images.slice() : [];
+    images = images.map(img => {
+      if (!img) return img;
+      let out = img;
+      if (out.startsWith('/uploads/')) {
+        out = `${baseUrl}${out}`;
+      }
+      return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+    });
+    return { ...product, image: mainImage, images };
+  });
+
   res.json({
     success: true,
-    data: { products }
+    data: { products: normalizedProducts }
   });
 }));
 
@@ -183,9 +242,35 @@ router.get('/:id', asyncHandler(async (req, res) => {
     });
   }
 
+  // Build base URL for normalizing image paths
+  const forwardedProto = req.get('x-forwarded-proto') || req.get('X-Forwarded-Proto');
+  const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
+  const protocol = forwardedProto || req.protocol || 'http';
+  const host = forwardedHost || req.get('host');
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
+
+  const productObj = product.toObject ? product.toObject() : product;
+  let mainImage = productObj.image || '';
+  if (mainImage) {
+    if (mainImage.startsWith('/uploads/')) {
+      mainImage = `${baseUrl}${mainImage}`;
+    }
+    mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+  }
+  let images = Array.isArray(productObj.images) ? productObj.images.slice() : [];
+  images = images.map(img => {
+    if (!img) return img;
+    let out = img;
+    if (out.startsWith('/uploads/')) {
+      out = `${baseUrl}${out}`;
+    }
+    return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+  });
+
   res.json({
     success: true,
-    data: { product }
+    data: { product: { ...productObj, image: mainImage, images } }
   });
 }));
 

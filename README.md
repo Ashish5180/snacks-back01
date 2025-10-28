@@ -573,8 +573,9 @@ Notes:
 - Orders compute shipping on the server using `config.shippingFee` and `config.freeShippingThreshold` at the time of order creation.
 - Frontend uses the same values for cart preview; ensure you open Admin → Settings to adjust.
 
-## 🖼️ Banner Upload API
+## 🖼️ Banner Management API
 
+### Banner Upload
 - Endpoint: `POST /api/uploads/banner`
 - Auth: Admin only (Bearer token)
 - Form field: `image` (single file, max 5MB)
@@ -591,6 +592,34 @@ Notes:
 }
 ```
 
+### Banner Configuration Management
+- **GET** `/api/admin/banners` - Get current banner configuration (public endpoint)
+- **PUT** `/api/admin/banners` - Update banner configuration (admin only)
+
+#### Update Banner Configuration
+```json
+{
+  "banners": [
+    {
+      "image": "https://your-host/uploads/banners/image-1.jpg",
+      "title": "Bite into Happiness",
+      "subtitle": "Crunchy, healthy, and 100% natural snacks",
+      "button": "Shop Now",
+      "link": "/products"
+    },
+    {
+      "image": "https://your-host/uploads/banners/image-2.jpg",
+      "title": "Taste the Vibe",
+      "subtitle": "Handcrafted snacks that love you back",
+      "button": "Explore Flavors",
+      "link": "/products"
+    }
+  ]
+}
+```
+
 Notes:
-- Use the returned `imageUrl` in `components/HeroCarousel.js` slides.
-- Files are stored under `/uploads/banners` and served statically by the server.
+- Banner configuration is stored in-memory and will reset on server restart
+- Frontend automatically fetches banner configuration on homepage load
+- Admin can upload images and configure banner content through the admin panel
+- Files are stored under `/uploads/banners` and served statically by the server

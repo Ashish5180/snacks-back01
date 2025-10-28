@@ -12,6 +12,15 @@ const Coupon = require('../models/Coupon');
 const { logger } = require('../utils/logger');
 let appConfig = require('../config/config');
 
+// Banner configuration storage (in-memory for now)
+let bannerConfig = {
+  banners: [
+    { id: 1, image: '/images/hero-snack-1.jpg', title: 'Bite into Happiness', subtitle: 'Crunchy, healthy, and 100% natural snacks', button: 'Shop Now', link: '/products' },
+    { id: 2, image: '/images/hero-snack-2.jpg', title: 'Taste the Vibe', subtitle: 'Handcrafted snacks that love you back', button: 'Explore Flavors', link: '/products' },
+    { id: 3, image: '/images/hero-snack-3.jpg', title: 'Free Shipping on Orders ₹500+', subtitle: 'Pan-India delivery in 3–5 days', button: 'Start Shopping', link: '/products' }
+  ]
+};
+
 // ==================== SHIPPING SETTINGS ENDPOINTS ====================
 // GET current shipping settings
 router.get('/shipping-fee', (req, res) => {
@@ -59,6 +68,65 @@ router.put('/shipping-fee', async (req, res) => {
     shippingFee: appConfig.shippingFee,
     freeShippingThreshold: appConfig.freeShippingThreshold
   });
+});
+
+// ==================== BANNER MANAGEMENT ENDPOINTS ====================
+// GET current banner configuration (public endpoint)
+router.get('/banners', (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  res.json({
+    success: true,
+    data: bannerConfig.banners
+  });
+});
+
+// UPDATE banner configuration (admin only)
+router.put('/banners', async (req, res) => {
+  try {
+    const { banners } = req.body;
+    
+    if (!Array.isArray(banners)) {
+      return res.status(400).json({ success: false, message: 'Banners must be an array' });
+    }
+    
+    // Validate banner structure
+    for (let i = 0; i < banners.length; i++) {
+      const banner = banners[i];
+      if (!banner.image || !banner.title || !banner.subtitle || !banner.button || !banner.link) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Banner ${i + 1} is missing required fields (image, title, subtitle, button, link)` 
+        });
+      }
+    }
+    
+    // Update banner configuration
+    bannerConfig.banners = banners.map((banner, index) => ({
+      id: index + 1,
+      image: banner.image,
+      title: banner.title,
+      subtitle: banner.subtitle,
+      button: banner.button,
+      link: banner.link
+    }));
+    
+    logger.info(`Banner configuration updated by admin`);
+    res.json({
+      success: true,
+      message: 'Banner configuration updated successfully',
+      data: bannerConfig.banners
+    });
+  } catch (error) {
+    logger.error('Banner update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating banner configuration'
+    });
+  }
 });
 
 // Apply admin middleware to all routes
