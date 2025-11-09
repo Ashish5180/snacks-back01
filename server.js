@@ -66,19 +66,30 @@ app.use(cors({
       'https://vibe-bites-backend.onrender.com',
       'https://vibebites.shop',
       'https://snacks-front01-g1bl.vercel.app',
-      'https://snacks-front01-g1bl.vercel.app/'
+      'https://snacks-front01-g1bl.vercel.app/',
+      'https://snacks-front01.vercel.app',
+      'https://snacks-front01.vercel.app/'
     ];
     
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (like mobile apps, curl, Postman, or same-origin requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      // Log the blocked origin for debugging
+      logger.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Content-Type']
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
 // Rate limiting with configuration
@@ -91,9 +102,11 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for OPTIONS requests (CORS preflight)
+  skip: (req) => req.method === 'OPTIONS'
 });
 
-// Apply rate limiting to API routes
+// Apply rate limiting to API routes (but skip OPTIONS requests)
 app.use('/api/', limiter);
 
 // Stricter rate limiting for auth routes
@@ -103,7 +116,9 @@ const authLimiter = rateLimit({
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again later.'
-  }
+  },
+  // Skip rate limiting for OPTIONS requests (CORS preflight)
+  skip: (req) => req.method === 'OPTIONS'
 });
 
 app.use('/api/auth/login', authLimiter);
