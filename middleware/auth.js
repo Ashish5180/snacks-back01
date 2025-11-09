@@ -84,8 +84,52 @@ const requireVerification = (req, res, next) => {
   }
 };
 
+// Optional auth - doesn't fail if token is missing or expired
+// Sets req.user if valid token exists, otherwise req.user is undefined
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Prefer cookie token, fallback to Authorization header
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    // If no token, continue without user
+    if (!token) {
+      req.user = undefined;
+      return next();
+    }
+
+    // Try to verify token
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select('-password');
+      
+      if (user && user.isActive) {
+        req.user = user;
+      } else {
+        req.user = undefined;
+      }
+    } catch (error) {
+      // Token is invalid or expired, continue without user
+      req.user = undefined;
+    }
+    
+    next();
+  } catch (error) {
+    logger.error('Optional auth middleware error:', error);
+    // On error, continue without user
+    req.user = undefined;
+    next();
+  }
+};
+
 module.exports = {
   protect,
   admin,
-  requireVerification
+  requireVerification,
+  optionalAuth
 };
