@@ -73,23 +73,21 @@ router.post('/register', [
     phone
   });
 
-  // Send welcome email
-  try {
-    await sendEmail({
-      to: user.email,
-      subject: 'Welcome to VIBE BITES!',
-      template: 'welcomeEmail',
-      data: {
-        name: user.firstName,
-        email: user.email
-      }
-    });
-  } catch (error) {
-    logger.error('Welcome email error:', error);
-  }
-
-  // Generate JWT token
+  // Generate JWT token immediately
   const token = user.generateAuthToken();
+
+  // Send welcome email asynchronously (don't wait for it)
+  sendEmail({
+    to: user.email,
+    subject: 'Welcome to VIBE BITES!',
+    template: 'welcomeEmail',
+    data: {
+      name: user.firstName,
+      email: user.email
+    }
+  }).catch(error => {
+    logger.error('Welcome email error:', error);
+  });
 
   res.cookie('token', token, {
     httpOnly: true,
