@@ -14,6 +14,7 @@ A complete Node.js/Express.js backend API for the VIBE BITES e-commerce platform
 - **Coupon System** - Flexible discount management
 - **Review System** - Product reviews and ratings
 - **Email Notifications** - Welcome emails, order confirmations, cancel/return request notifications, and new review alerts
+- **Announcement System** - Dynamic homepage announcement strip with admin management (CRUD operations)
 
 ### ✅ Security & Performance
 - **Input Validation** - Express-validator for all endpoints

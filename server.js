@@ -28,6 +28,7 @@ const adminRoutes = require('./routes/admin');
 const adminProductCreateRoute = require('./routes/adminProducts');
 const wishlistRoutes = require('./routes/wishlist');
 const uploadsRoutes = require('./routes/uploads');
+const announcementRoutes = require('./routes/announcements');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -197,6 +198,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/products', adminProductCreateRoute);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/uploads', uploadsRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // Catch all handler for undefined routes
 app.all('*', (req, res) => {
