@@ -119,4 +119,11 @@ const config = {
 };
 
 const env = process.env.NODE_ENV || 'development';
-module.exports = config[env];
+const selectedConfig = config[env];
+
+if (!selectedConfig) {
+  console.error(`Invalid NODE_ENV: ${env}. Falling back to development.`);
+  module.exports = config.development;
+} else {
+  module.exports = selectedConfig;
+}

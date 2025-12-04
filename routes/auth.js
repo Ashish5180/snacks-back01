@@ -191,10 +191,21 @@ router.post('/login', [
 // @desc    Get current user profile
 // @access  Private
 router.get('/me', protect, asyncHandler(async (req, res) => {
+  // Ensure user exists (should always be set by protect middleware)
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'User not authenticated'
+    });
+  }
+
+  // Convert mongoose document to plain object to ensure proper serialization
+  const userData = req.user.toObject ? req.user.toObject() : req.user;
+
   res.set('Cache-Control', 'no-store');
   res.json({
     success: true,
-    data: req.user
+    data: userData
   });
 }));
 

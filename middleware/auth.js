@@ -10,12 +10,10 @@ const protect = async (req, res, next) => {
     // Check for token in Authorization header first (for frontend using localStorage)
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
-      logger.debug('Token found in Authorization header');
     } 
     // Fallback to cookie token
     else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
-      logger.debug('Token found in cookie');
     }
 
     // Check if token exists
@@ -43,7 +41,17 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from token
-    const user = await User.findById(decoded.id).select('-password');
+    let user;
+    try {
+      user = await User.findById(decoded.id).select('-password');
+    } catch (dbError) {
+      logger.error('Database error in protect middleware:', dbError);
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection error. Please try again later.'
+      });
+    }
+    
     if (!user) {
       logger.warn('User not found for token', { userId: decoded.id });
       return res.status(401).json({

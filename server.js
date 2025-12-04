@@ -229,69 +229,146 @@ const connectDB = async () => {
 
 // Start server
 const startServer = async () => {
-  await connectDB();
+  try {
+    // Validate required config
+    if (!config) {
+      logger.error('Configuration is missing. Please check your NODE_ENV and config file.');
+      process.exit(1);
+    }
 
-  // Seed default coupon if in development
-  if (process.env.NODE_ENV !== 'production') {
-    try {
-      const Coupon = require('./models/Coupon');
-      const code = 'VIBE10';
-      const existing = await Coupon.findOne({ code });
-      if (!existing) {
-        const now = new Date();
-        await Coupon.create({
-          code,
-          description: '10% off your order',
-          discount: 10,
-          type: 'percentage',
-          categories: [],
-          minOrderAmount: 0,
-          maxDiscount: 100,
-          validFrom: now,
-          validUntil: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
-          isActive: true,
-          isFirstTimeOnly: false
-        });
-        logger.info('Seeded default coupon VIBE10');
-      } else {
-        logger.info('Default coupon VIBE10 already present');
+    if (!config.port) {
+      logger.error('PORT is not configured. Please set PORT environment variable.');
+      process.exit(1);
+    }
+
+    // Validate production environment variables
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.MONGODB_URI) {
+        logger.error('MONGODB_URI is required in production. Please set the environment variable.');
+        process.exit(1);
       }
-    } catch (e) {
-      logger.error('Error seeding default coupon:', e);
+      if (!process.env.JWT_SECRET) {
+        logger.error('JWT_SECRET is required in production. Please set the environment variable.');
+        process.exit(1);
+      }
     }
+
+    // Start server first (don't wait for DB)
+    const server = app.listen(config.port, '0.0.0.0', () => {
+      logger.info(`Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`Port ${config.port} is already in use`);
+        process.exit(1);
+      } else {
+        logger.error('Server error:', error);
+        process.exit(1);
+      }
+    });
+
+    // Connect to database in background (non-blocking)
+    connectDB().then(() => {
+      // Seed default coupon if in development (after DB connects)
+      if (process.env.NODE_ENV !== 'production') {
+        setTimeout(async () => {
+          try {
+            const Coupon = require('./models/Coupon');
+            const code = 'VIBE10';
+            const existing = await Coupon.findOne({ code });
+            if (!existing) {
+              const now = new Date();
+              await Coupon.create({
+                code,
+                description: '10% off your order',
+                discount: 10,
+                type: 'percentage',
+                categories: [],
+                minOrderAmount: 0,
+                maxDiscount: 100,
+                validFrom: now,
+                validUntil: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+                isActive: true,
+                isFirstTimeOnly: false
+              });
+              logger.info('Seeded default coupon VIBE10');
+            } else {
+              logger.info('Default coupon VIBE10 already present');
+            }
+          } catch (e) {
+            logger.error('Error seeding default coupon:', e);
+            // Don't exit - continue without seeding
+          }
+        }, 2000); // Wait 2 seconds for DB to be ready
+      }
+    }).catch(err => {
+      logger.error('Database connection failed:', err);
+    });
+
+    // Keep-alive cron (only if fetch is available and in production)
+    if (typeof fetch !== 'undefined' && process.env.NODE_ENV === 'production') {
+      const baseUrl = 'https://snacks-back01.onrender.com';
+      const pingHealth = async () => {
+        try {
+          // Create timeout controller
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const res = await fetch(`${baseUrl}/health`, { 
+            method: 'GET',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          if (!res.ok) throw new Error(`Health ping failed: ${res.status}`);
+          logger.info('Keep-alive: health ping ok');
+        } catch (err) {
+          // Silently fail - don't log warnings for keep-alive
+          if (err.name !== 'AbortError') {
+            logger.debug(`Keep-alive: health ping error: ${err.message}`);
+          }
+        }
+      };
+      // Fire after a delay, then every 5 minutes
+      setTimeout(pingHealth, 30000); // Wait 30 seconds before first ping
+      setInterval(pingHealth, 5 * 60 * 1000);
+      logger.info('Keep-alive cron enabled: pinging /health every 5 minutes');
+    }
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   }
-
-  app.listen(config.port, () => {
-    logger.info(`Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
-  });
-
-  // Keep-alive cron (hardcoded for production): ping hosted health endpoint every 5 minutes
-  const baseUrl = 'https://snacks-back01.onrender.com';
-  const pingHealth = async () => {
-    try {
-      const res = await fetch(`${baseUrl}/health`, { method: 'GET' });
-      if (!res.ok) throw new Error(`Health ping failed: ${res.status}`);
-      logger.info('Keep-alive: health ping ok');
-    } catch (err) {
-      logger.warn(`Keep-alive: health ping error: ${err.message}`);
-    }
-  };
-  // Fire immediately, then every 5 minutes
-  pingHealth();
-  setInterval(pingHealth, 5 * 60 * 1000);
-  logger.info('Keep-alive cron enabled (hardcoded prod): pinging /health every 5 minutes');
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   logger.error('Unhandled Rejection:', err);
-  // Don't exit - log and continue
+  // In production, exit to allow process manager to restart
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('Exiting due to unhandled rejection in production');
+    process.exit(1);
+  }
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception:', err);
-  // Don't exit - log and continue
+  // Always exit on uncaught exceptions - they're dangerous
+  process.exit(1);
+});
+
+// Handle SIGTERM gracefully (for Railway, Docker, etc.)
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Handle SIGINT gracefully (Ctrl+C)
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
 
 startServer();
