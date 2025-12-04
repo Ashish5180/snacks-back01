@@ -3,38 +3,49 @@ const User = require('../models/User');
 const { logger } = require('../utils/logger');
 
 // Protect routes - require authentication
-// Protect routes - require authentication
 const protect = async (req, res, next) => {
   try {
     let token;
-    console.log('PROTECT MIDDLEWARE: COOKIES:', req.cookies);
 
-    // Prefer cookie token, fallback to Authorization header
-    if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-      console.log('PROTECT MIDDLEWARE: TOKEN FROM COOKIE:', token);
-    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    // Check for token in Authorization header first (for frontend using localStorage)
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
-      console.log('PROTECT MIDDLEWARE: TOKEN FROM AUTH HEADER:', token);
+      logger.debug('Token found in Authorization header');
+    } 
+    // Fallback to cookie token
+    else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+      logger.debug('Token found in cookie');
     }
 
     // Check if token exists
     if (!token) {
-      console.log('PROTECT MIDDLEWARE: NO TOKEN FOUND');
+      logger.warn('No token provided in request', {
+        hasAuthHeader: !!req.headers.authorization,
+        hasCookies: !!req.cookies,
+        url: req.originalUrl
+      });
       return res.status(401).json({
         success: false,
-        message: 'Access denied. No token provided.'
+        message: 'Access denied. No token provided. Please login again.'
       });
     }
 
     // Verify token
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET is not configured');
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error.'
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('PROTECT MIDDLEWARE: DECODED TOKEN:', decoded);
+    
     // Get user from token
     const user = await User.findById(decoded.id).select('-password');
-    console.log('PROTECT MIDDLEWARE: USER FROM TOKEN:', user);
     if (!user) {
-      console.log('PROTECT MIDDLEWARE: USER NOT FOUND');
+      logger.warn('User not found for token', { userId: decoded.id });
       return res.status(401).json({
         success: false,
         message: 'User not found.'
@@ -42,7 +53,7 @@ const protect = async (req, res, next) => {
     }
 
     if (!user.isActive) {
-      console.log('PROTECT MIDDLEWARE: USER NOT ACTIVE');
+      logger.warn('Inactive user attempted access', { userId: user._id });
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated.'
@@ -52,10 +63,26 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    // Handle specific JWT errors
+    if (error.name === 'JsonWebTokenError') {
+      logger.warn('Invalid token provided', { error: error.message });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token. Please login again.'
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      logger.warn('Expired token provided', { expiredAt: error.expiredAt });
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired. Please login again.'
+      });
+    }
+    
     logger.error('Protect middleware error:', error);
     return res.status(401).json({
       success: false,
-      message: 'Invalid or expired token.'
+      message: 'Authentication failed. Please login again.'
     });
   }
 };

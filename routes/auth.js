@@ -89,11 +89,16 @@ router.post('/register', [
     logger.error('Welcome email error:', error);
   });
 
+  // Determine if we're in production (HTTPS)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSecure = isProduction || req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
   res.cookie('token', token, {
     httpOnly: true,
-    secure: false, // Set to false for HTTP Elastic Beanstalk deployment
-    sameSite: 'lax', // Use lax for better compatibility
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: isSecure, // true for HTTPS (production), false for HTTP (development)
+    sameSite: isSecure ? 'none' : 'lax', // 'none' required for cross-origin cookies in HTTPS
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
   });
   res.status(201).json({
     success: true,
@@ -161,11 +166,16 @@ router.post('/login', [
   // Generate JWT token
   const token = user.generateAuthToken();
 
+  // Determine if we're in production (HTTPS)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSecure = isProduction || req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
   res.cookie('token', token, {
     httpOnly: true,
-    secure: false, // Set to false for HTTP Elastic Beanstalk deployment
-    sameSite: 'lax', // Use lax for better compatibility
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: isSecure, // true for HTTPS (production), false for HTTP (development)
+    sameSite: isSecure ? 'none' : 'lax', // 'none' required for cross-origin cookies in HTTPS
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
   });
   res.json({
     success: true,
@@ -372,10 +382,14 @@ router.post('/reset-password', [
 // @desc    Logout user (client-side token removal)
 // @access  Private
 router.post('/logout', protect, asyncHandler(async (req, res) => {
+  // Determine if we're in production (HTTPS)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSecure = isProduction || req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
   res.clearCookie('token', {
     httpOnly: true,
-    secure: false, // Set to false for HTTP Elastic Beanstalk deployment
-    sameSite: 'lax',
+    secure: isSecure,
+    sameSite: isSecure ? 'none' : 'lax',
     path: '/',
   });
   res.json({
