@@ -12,7 +12,15 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss');
 const path = require('path');
-const config = require('./config/config');
+
+// Load config with error handling
+let config;
+try {
+  config = require('./config/config');
+} catch (error) {
+  console.error('Failed to load config:', error);
+  process.exit(1);
+}
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -218,7 +226,11 @@ app.use(errorHandler);
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(config.mongodb.uri, config.mongodb.options);
+    if (!config.mongodb || !config.mongodb.uri) {
+      logger.warn('MongoDB URI not configured. Skipping database connection.');
+      return;
+    }
+    await mongoose.connect(config.mongodb.uri, config.mongodb.options || {});
     logger.info('MongoDB connected successfully');
   } catch (error) {
     logger.error('MongoDB connection error:', error);
@@ -230,13 +242,20 @@ const connectDB = async () => {
 // Start server
 const startServer = async () => {
   try {
+    // Log startup attempt
+    console.log('Starting server...');
+    console.log(`NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`PORT: ${process.env.PORT || 'not set'}`);
+
     // Validate required config
     if (!config) {
+      console.error('Configuration is missing. Please check your NODE_ENV and config file.');
       logger.error('Configuration is missing. Please check your NODE_ENV and config file.');
       process.exit(1);
     }
 
     if (!config.port) {
+      console.error('PORT is not configured. Please set PORT environment variable.');
       logger.error('PORT is not configured. Please set PORT environment variable.');
       process.exit(1);
     }
@@ -255,7 +274,9 @@ const startServer = async () => {
 
     // Start server first (don't wait for DB)
     const server = app.listen(config.port, '0.0.0.0', () => {
-      logger.info(`Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
+      const message = `Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`;
+      console.log(message);
+      logger.info(message);
     });
 
     // Handle server errors
@@ -371,6 +392,15 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-startServer();
+// Wrap startup in try-catch to catch any synchronous errors
+try {
+  startServer().catch((error) => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('Fatal error during startup:', error);
+  process.exit(1);
+}
 
 module.exports = app;
