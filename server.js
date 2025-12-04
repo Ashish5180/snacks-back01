@@ -69,7 +69,11 @@ app.use(cors({
       'https://snacks-front01-g1bl.vercel.app',
       'https://snacks-front01-g1bl.vercel.app/',
       'https://snacks-front01.vercel.app',
-      'https://snacks-front01.vercel.app/'
+      'https://snacks-front01.vercel.app/',
+      'https://snacks-back01-production.up.railway.app/',
+      'https://snacks-back01-production.up.railway.app'
+
+
     ];
     
     // Allow requests with no origin (like mobile apps, curl, Postman, or same-origin requests)
