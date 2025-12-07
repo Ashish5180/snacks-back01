@@ -264,12 +264,7 @@ const startServer = async () => {
 
     // Validate production environment variables
     if (process.env.NODE_ENV === 'production') {
-      if (!process.env.MONGODB_URI) {
-        const errorMsg = 'MONGODB_URI is required in production. Please set the environment variable.';
-        console.error(errorMsg);
-        logger.error(errorMsg);
-        process.exit(1);
-      }
+      // MongoDB URI is now hardcoded in config, no need to check
       if (!process.env.JWT_SECRET) {
         const errorMsg = 'JWT_SECRET is required in production. Please set the environment variable.';
         console.error(errorMsg);
