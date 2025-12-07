@@ -260,35 +260,52 @@ const startServer = async () => {
       process.exit(1);
     }
 
+    console.log(`Config loaded: port=${config.port}, hasMongoDB=${!!config.mongodb}`);
+
     // Validate production environment variables
     if (process.env.NODE_ENV === 'production') {
       if (!process.env.MONGODB_URI) {
-        logger.error('MONGODB_URI is required in production. Please set the environment variable.');
+        const errorMsg = 'MONGODB_URI is required in production. Please set the environment variable.';
+        console.error(errorMsg);
+        logger.error(errorMsg);
         process.exit(1);
       }
       if (!process.env.JWT_SECRET) {
-        logger.error('JWT_SECRET is required in production. Please set the environment variable.');
+        const errorMsg = 'JWT_SECRET is required in production. Please set the environment variable.';
+        console.error(errorMsg);
+        logger.error(errorMsg);
         process.exit(1);
       }
+      console.log('Production environment variables validated successfully');
     }
 
     // Start server first (don't wait for DB)
-    const server = app.listen(config.port, '0.0.0.0', () => {
-      const message = `Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`;
-      console.log(message);
-      logger.info(message);
-    });
+    let server;
+    try {
+      server = app.listen(config.port, '0.0.0.0', () => {
+        const message = `Server running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`;
+        console.log(message);
+        logger.info(message);
+      });
 
-    // Handle server errors
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        logger.error(`Port ${config.port} is already in use`);
-        process.exit(1);
-      } else {
-        logger.error('Server error:', error);
-        process.exit(1);
-      }
-    });
+      // Handle server errors
+      server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+          const errorMsg = `Port ${config.port} is already in use`;
+          console.error(errorMsg);
+          logger.error(errorMsg);
+          process.exit(1);
+        } else {
+          console.error('Server error:', error);
+          logger.error('Server error:', error);
+          process.exit(1);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      logger.error('Failed to start server:', error);
+      process.exit(1);
+    }
 
     // Connect to database in background (non-blocking)
     connectDB().then(() => {
