@@ -115,10 +115,10 @@ const getFileUrl = (req, filename, subdir = 'products') => {
     const protocol = forwardedProto || (req.protocol || 'http');
     const host = forwardedHost || (req.get && req.get('host'));
     const baseUrlEnv = process.env.BASE_URL;
-    const baseUrl = (protocol && host) ? `${protocol}://${host}` : (baseUrlEnv || 'http://localhost:8080');
+    const baseUrl = (protocol && host) ? `${protocol}://${host}` : (baseUrlEnv || 'http://localhost:3000');
     return `${baseUrl}/uploads/${subdir}/${filename}`;
   } catch (_) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     return `${baseUrl}/uploads/${subdir}/${filename}`;
   }
 };

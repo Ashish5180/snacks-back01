@@ -103,8 +103,8 @@ server/
    ```
 
 5. **Access the API**
-   - API Base URL: `http://localhost:8080`
-   - Health Check: `http://localhost:8080/health`
+   - API Base URL: `http://localhost:3000`
+   - Health Check: `http://localhost:3000/health`
 
 ## 🔧 Environment Variables
 
@@ -112,7 +112,7 @@ Create a `.env` file with the following variables:
 
 ```env
 # Server Configuration
-PORT=8080
+PORT=3000
 NODE_ENV=development
 
 # MongoDB Configuration
@@ -551,7 +551,7 @@ For questions or support, please contact:
 
 - Uploaded files are served from `/uploads` with CORS enabled.
 - The API now generates absolute image URLs using the incoming request's protocol and host (supports proxies like Vercel/Render/ELB).
-- If proxy headers are missing, it falls back to `BASE_URL` or `http://localhost:8080`.
+- If proxy headers are missing, it falls back to `BASE_URL` or `http://localhost:3000`.
 
 Environment tips:
 

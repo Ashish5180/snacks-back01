@@ -99,7 +99,7 @@ router.get('/', [
     const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
     const protocol = forwardedProto || req.protocol || 'http';
     const host = forwardedHost || req.get('host');
-    const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+    const fallbackBase = process.env.BASE_URL || 'http://localhost:3000';
     const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
 
     // Normalize product image URLs so they work on any device/host
@@ -110,7 +110,7 @@ router.get('/', [
         if (mainImage.startsWith('/uploads/')) {
           mainImage = `${baseUrl}${mainImage}`;
         }
-        mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+        mainImage = mainImage.replace(/^https?:\/\/localhost:3000/, baseUrl);
       }
       let images = Array.isArray(product.images) ? product.images.slice() : [];
       images = images.map(img => {
@@ -119,7 +119,7 @@ router.get('/', [
         if (out.startsWith('/uploads/')) {
           out = `${baseUrl}${out}`;
         }
-        return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+        return out.replace(/^https?:\/\/localhost:3000/, baseUrl);
       });
       return { ...product, image: mainImage, images };
     });
@@ -169,7 +169,7 @@ router.get('/featured', asyncHandler(async (req, res) => {
   const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
   const protocol = forwardedProto || req.protocol || 'http';
   const host = forwardedHost || req.get('host');
-  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:3000';
   const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
 
   const normalizedProducts = products.map(p => {
@@ -179,7 +179,7 @@ router.get('/featured', asyncHandler(async (req, res) => {
       if (mainImage.startsWith('/uploads/')) {
         mainImage = `${baseUrl}${mainImage}`;
       }
-      mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+      mainImage = mainImage.replace(/^https?:\/\/localhost:3000/, baseUrl);
     }
     let images = Array.isArray(product.images) ? product.images.slice() : [];
     images = images.map(img => {
@@ -188,7 +188,7 @@ router.get('/featured', asyncHandler(async (req, res) => {
       if (out.startsWith('/uploads/')) {
         out = `${baseUrl}${out}`;
       }
-      return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+      return out.replace(/^https?:\/\/localhost:3000/, baseUrl);
     });
     return { ...product, image: mainImage, images };
   });
@@ -247,7 +247,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
   const protocol = forwardedProto || req.protocol || 'http';
   const host = forwardedHost || req.get('host');
-  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:3000';
   const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
 
   const productObj = product.toObject ? product.toObject() : product;
@@ -256,7 +256,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     if (mainImage.startsWith('/uploads/')) {
       mainImage = `${baseUrl}${mainImage}`;
     }
-    mainImage = mainImage.replace(/^https?:\/\/localhost:8080/, baseUrl);
+    mainImage = mainImage.replace(/^https?:\/\/localhost:3000/, baseUrl);
   }
   let images = Array.isArray(productObj.images) ? productObj.images.slice() : [];
   images = images.map(img => {
@@ -265,7 +265,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     if (out.startsWith('/uploads/')) {
       out = `${baseUrl}${out}`;
     }
-    return out.replace(/^https?:\/\/localhost:8080/, baseUrl);
+    return out.replace(/^https?:\/\/localhost:3000/, baseUrl);
   });
 
   res.json({

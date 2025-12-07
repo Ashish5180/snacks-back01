@@ -16,7 +16,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const forwardedHost = req.get('x-forwarded-host') || req.get('X-Forwarded-Host');
   const protocol = forwardedProto || req.protocol || 'http';
   const host = forwardedHost || req.get('host');
-  const fallbackBase = process.env.BASE_URL || 'http://localhost:8080';
+  const fallbackBase = process.env.BASE_URL || 'http://localhost:3000';
   const baseUrl = (protocol && host) ? `${protocol}://${host}` : fallbackBase;
 
   const categories = docs.map(cat => {
@@ -25,7 +25,7 @@ router.get('/', asyncHandler(async (req, res) => {
       if (image.startsWith('/uploads/')) {
         image = `${baseUrl}${image}`;
       }
-      image = image.replace(/^https?:\/\/localhost:8080/, baseUrl);
+      image = image.replace(/^https?:\/\/localhost:3000/, baseUrl);
     }
     return { ...cat, image };
   });
