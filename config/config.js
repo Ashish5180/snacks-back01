@@ -41,7 +41,7 @@ const config = {
   production: {
     port: process.env.PORT || 3000,
     mongodb: {
-      uri: 'mongodb+srv://username:password@cluster.mongodb.net/vibe-bites?retryWrites=true&w=majority',
+      uri: process.env.MONGODB_URI || process.env.MONGODB_URI_PROD,
       options: {
         maxPoolSize: 20,
         minPoolSize: 10,
