@@ -1,8 +1,7 @@
 
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const router = express.Router();
 const { protect, admin } = require('../middleware/auth');
 const User = require('../models/User');
@@ -10,6 +9,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Coupon = require('../models/Coupon');
 const { logger } = require('../utils/logger');
+const { getCloudinary } = require('../utils/cloudinary');
 let appConfig = require('../config/config');
 
 // Banner configuration storage (in-memory for now)
@@ -134,24 +134,18 @@ router.use(protect);
 router.use(admin);
 
 // ==================== MULTER CONFIGURATION ====================
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = 'uploads/products/';
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + extension);
-  }
+const cloudinary = getCloudinary();
+const productFolder = process.env.CLOUDINARY_PRODUCT_FOLDER || 'vibe-bites/products';
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: productFolder,
+    public_id: `product-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+  })
 });
 
 // File filter for images only
@@ -183,14 +177,12 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
     }
 
     // Get the uploaded file info
-    const { filename, path: filePath, mimetype, size } = req.file;
+    const { filename, path: secureUrl, mimetype, size, format, width, height } = req.file;
     const isMainImage = req.body.isMainImage === 'true';
     
-    // Construct the public URL for the uploaded image
-    // Adjust this based on your server configuration
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/products/${filename}`;
+    const imageUrl = secureUrl;
     
-    logger.info(`Image uploaded successfully: ${filename}, Size: ${size} bytes`);
+    logger.info(`Image uploaded to Cloudinary: ${filename}, Size: ${size} bytes`);
 
     res.status(200).json({
       success: true,
@@ -198,6 +190,9 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
         imageUrl,
         filename,
         size,
+        format,
+        width,
+        height,
         isMainImage
       },
       message: 'Image uploaded successfully'
@@ -205,14 +200,6 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
 
   } catch (error) {
     logger.error('Upload error:', error);
-    
-    // Clean up uploaded file if there was an error
-    if (req.file && req.file.path) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) logger.error('Error deleting file:', err);
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: error.message || 'Error uploading image'

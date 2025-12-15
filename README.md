@@ -133,6 +133,7 @@ EMAIL_PASS=your-app-password
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+CLOUDINARY_PRODUCT_FOLDER=vibe-bites/products
 
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
@@ -148,6 +149,14 @@ CORS_ORIGIN=http://localhost:3000
 # Logging
 LOG_LEVEL=info
 ```
+
+> **Note:** The server reads `MONGODB_URI` first and falls back to `MONGODB_URI_PROD` when connecting in production. Ensure at least one of these variables is configured in your Render/Railway/EC2 environment before deploying.
+
+### Product Image Hosting
+
+- Image uploads now use Cloudinary instead of the local `uploads/` folder, so files persist across deploys.
+- Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, and optional `CLOUDINARY_PRODUCT_FOLDER` in your environment (Render → Environment → Add env var).
+- After configuring the variables, use the admin image upload endpoint as before—the response already contains the hosted `imageUrl` that you can store in MongoDB.
 
 ## 📚 API Documentation
 
